@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FuturePath - Career Predictor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Library for PDF and Image Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #fce4ec 0%, #e3f2fd 100%);
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+        }
+
+        .btn-primary {
+            background-color: #f06292; /* Soft Pink */
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #ec407a;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: #64b5f6; /* Baby Blue */
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: #42a5f5;
+            transform: translateY(-2px);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, #f06292, #64b5f6);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        #result-area {
+            display: none;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-3xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">✨ FuturePath Predictor</h1>
+            <p class="text-gray-600 mt-2">Temukan masa depanmu dengan bantuan AI kepribadian sederhana.</p>
+        </header>
+
+        <!-- Mode Selection Screen -->
+        <div id="mode-screen" class="glass-card p-8 shadow-xl text-center">
+            <h2 class="text-xl font-semibold mb-6 text-pink-600">Pilih Status Kamu Saat Ini:</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button onclick="startApp('siswa')" class="p-6 border-2 border-pink-200 rounded-xl hover:bg-pink-50 transition">
+                    <div class="text-4xl mb-2">🎒</div>
+                    <span class="font-bold">Siswa</span>
+                    <p class="text-xs text-gray-500 mt-1">SMP / SMA / SMK</p>
+                </button>
+                <button onclick="startApp('mahasiswa')" class="p-6 border-2 border-blue-200 rounded-xl hover:bg-blue-50 transition">
+                    <div class="text-4xl mb-2">🎓</div>
+                    <span class="font-bold">Mahasiswa</span>
+                    <p class="text-xs text-gray-500 mt-1">Kuliah / Fresh Grad</p>
+                </button>
+                <button onclick="startApp('umum')" class="p-6 border-2 border-purple-200 rounded-xl hover:bg-purple-50 transition">
+                    <div class="text-4xl mb-2">💼</div>
+                    <span class="font-bold">Umum</span>
+                    <p class="text-xs text-gray-500 mt-1">Profesional / Karir</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="glass-card p-8 shadow-xl hidden">
+            <div class="flex justify-between items-center mb-4">
+                <span id="current-mode-label" class="text-xs font-bold uppercase tracking-wider text-pink-500">Mode: Siswa</span>
+                <span id="progress-text" class="text-xs text-gray-500">Pertanyaan 1/15</span>
+            </div>
+            <div class="progress-bar mb-8">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+
+            <div id="question-container">
+                <h2 id="question-text" class="text-xl font-semibold text-gray-800 mb-6">Memuat pertanyaan...</h2>
+                <div id="options-container" class="space-y-3">
+                    <!-- Options injected by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="glass-card p-8 shadow-xl hidden">
+            <div id="capture-area">
+                <div class="text-center mb-6">
+                    <div class="text-6xl mb-4">🔮</div>
+                    <h2 class="text-2xl font-bold text-gray-800">Hasil Prediksi Karirmu</h2>
+                    <p class="text-pink-500 font-medium" id="result-title">Creative Designer</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl border border-pink-100 mb-6">
+                    <h3 class="font-bold text-gray-700 mb-2">Mengapa ini cocok untukmu?</h3>
+                    <p id="result-desc" class="text-sm text-gray-600 leading-relaxed">
+                        Berdasarkan minatmu pada seni dan teknologi, kamu memiliki profil yang sangat kuat di bidang kreatif digital.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h4 class="text-xs font-bold text-blue-600 uppercase">Jurusan Relevan</h4>
+                        <p id="result-major" class="text-sm font-semibold">DKV / Ilmu Komunikasi</p>
+                    </div>
+                    <div class="bg-pink-50 p-4 rounded-lg">
+                        <h4 class="text-xs font-bold text-pink-600 uppercase">Potensi Gaji</h4>
+                        <p id="result-salary" class="text-sm font-semibold">Tinggi</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 justify-center border-t pt-6">
+                <button onclick="downloadPDF()" class="btn-primary text-white px-4 py-2 rounded-lg text-sm flex items-center">
+                    📥 PDF
+                </button>
+                <button onclick="downloadImage()" class="btn-secondary text-white px-4 py-2 rounded-lg text-sm flex items-center">
+                    🖼️ Gambar
+                </button>
+                <button onclick="downloadExcel()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm flex items-center transition">
+                    📊 Excel
+                </button>
+                <button onclick="location.reload()" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-lg text-sm">
+                    🔄 Ulangi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Pertanyaan (Sederhana untuk demo, bisa dikembangkan hingga 20)
+        const questionsDB = {
+            siswa: [
+                { q: "Pelajaran apa yang paling kamu nikmati di sekolah?", options: [{t:"Matematika & IPA", v:"tech"}, {t:"Seni & Budaya", v:"creative"}, {t:"Ekonomi/IPS", v:"business"}, {t:"Bahasa", v:"humanities"}] },
+                { q: "Apa yang kamu lakukan di waktu luang?", options: [{t:"Bermain game/gadget", v:"tech"}, {t:"Menggambar/Menulis", v:"creative"}, {t:"Berjualan kecil-kecilan", v:"business"}, {t:"Membantu teman belajar", v:"humanities"}] },
+                { q: "Pilih lingkungan kerja idealmu:", options: [{t:"Laboratorium", v:"tech"}, {t:"Studio Kreatif", v:"creative"}, {t:"Kantor Modern", v:"business"}, {t:"Sekolah/Rumah Sakit", v:"humanities"}] },
+                { q: "Apakah kamu suka menganalisis data?", options: [{t:"Ya, sangat suka", v:"tech"}, {t:"Biasa saja", v:"business"}, {t:"Lebih suka visual", v:"creative"}, {t:"Tidak, saya suka interaksi", v:"humanities"}] },
+                { q: "Apa impian terbesarmu?", options: [{t:"Membuat robot/AI", v:"tech"}, {t:"Pameran karya seni", v:"creative"}, {t:"Memiliki perusahaan", v:"business"}, {t:"Membantu banyak orang", v:"humanities"}] },
+                // ... (tambah hingga 15 pertanyaan)
+            ],
+            mahasiswa: [
+                { q: "Tipe tugas apa yang kamu sukai?", options: [{t:"Koding/Logika", v:"tech"}, {t:"Desain/Presentasi", v:"creative"}, {t:"Riset Pasar", v:"business"}, {t:"Debat/Public Speaking", v:"humanities"}] },
+                { q: "Bagaimana caramu memecahkan masalah?", options: [{t:"Data-driven", v:"tech"}, {t:"Berpikir out-of-the-box", v:"creative"}, {t:"Melihat sisi profit", v:"business"}, {t:"Kompromi antar orang", v:"humanities"}] },
+                { q: "Acara kampus mana yang menarik untukmu?", options: [{t:"Hackathon", v:"tech"}, {t:"Festival Seni", v:"creative"}, {t:"Kompetisi Bisnis", v:"business"}, {t:"Volunteer Sosial", v:"humanities"}] },
+                { q: "Preferensi gadgetmu?", options: [{t:"Spek tinggi/performa", v:"tech"}, {t:"Layar akurat/estetika", v:"creative"}, {t:"Ringkas/untuk meeting", v:"business"}, {t:"Tablet untuk baca/tulis", v:"humanities"}] },
+                { q: "Gaya komunikasimu?", options: [{t:"Singkat & padat", v:"tech"}, {t:"Ekspresif", v:"creative"}, {t:"Persuasif", v:"business"}, {t:"Empati", v:"humanities"}] },
+            ],
+            umum: [
+                { q: "Apa prioritas utamamu saat ini?", options: [{t:"Stabilitas Finansial", v:"business"}, {t:"Kepuasan Berkarya", v:"creative"}, {t:"Kebebasan Bekerja", v:"tech"}, {t:"Memberi Manfaat", v:"humanities"}] },
+                { q: "Sektor industri yang kamu minati?", options: [{t:"Teknologi/SaaS", v:"tech"}, {t:"Hiburan/Media", v:"creative"}, {t:"Perbankan/Retail", v:"business"}, {t:"Layanan Publik", v:"humanities"}] },
+                { q: "Sikapmu terhadap perubahan teknologi?", options: [{t:"Selalu update", v:"tech"}, {t:"Menggunakannya untuk kreasi", v:"creative"}, {t:"Gunakan untuk efisiensi", v:"business"}, {t:"Sedikit kewalahan", v:"humanities"}] },
+                { q: "Cara bekerja favorit?", options: [{t:"Remote/WFA", v:"tech"}, {t:"Coworking space", v:"creative"}, {t:"Kantor Formal", v:"business"}, {t:"Lapangan/Bertemu Orang", v:"humanities"}] },
+                { q: "Apa hobi dewasamu?", options: [{t:"Rakitan PC/Gadget", v:"tech"}, {t:"Fotografi/Desain", v:"creative"}, {t:"Trading/Investasi", v:"business"}, {t:"Bakti Sosial", v:"humanities"}] },
+            ]
+        };
+
+        // Rekomendasi Data
+        const careerData = {
+            tech: { title: "Tech Wizard / Data Scientist", desc: "Kamu memiliki logika yang kuat dan kemampuan analisis yang tajam. Dunia digital menunggumu untuk membangun solusi masa depan.", major: "Informatika, Teknik Elektro, Sains Data", salary: "Sangat Tinggi" },
+            creative: { title: "Creative Visionary / Designer", desc: "Estetika dan ide orisinal adalah kekuatanmu. Kamu mampu mengubah konsep abstrak menjadi karya visual yang memukau.", major: "DKV, Desain Interior, Film & Animasi", salary: "Kompetitif" },
+            business: { title: "Strategic Entrepreneur / Manager", desc: "Kamu memiliki bakat memimpin dan melihat peluang di mana orang lain melihat masalah. Dunia bisnis butuh visi strategismu.", major: "Manajemen, Akuntansi, Bisnis Internasional", salary: "Tinggi & Tak Terbatas" },
+            humanities: { title: "Humanity Leader / Psychologist", desc: "Kemampuan interpersonal dan empatimu luar biasa. Kamu paling bersinar saat membantu orang lain atau mengelola hubungan manusia.", major: "Psikologi, Hubungan Internasional, Hukum", salary: "Stabil" }
+        };
+
+        let currentMode = 'siswa';
+        let currentQuestions = [];
+        let currentIdx = 0;
+        let scores = { tech: 0, creative: 0, business: 0, humanities: 0 };
+
+        function startApp(mode) {
+            currentMode = mode;
+            currentQuestions = questionsDB[mode];
+            currentIdx = 0;
+            scores = { tech: 0, creative: 0, business: 0, humanities: 0 };
+            
+            document.getElementById('mode-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            document.getElementById('current-mode-label').innerText = `Mode: ${mode}`;
+            
+            showQuestion();
+        }
+
+        function showQuestion() {
+            if (currentIdx >= currentQuestions.length) {
+                showResult();
+                return;
+            }
+
+            const q = currentQuestions[currentIdx];
+            document.getElementById('question-text').innerText = q.q;
+            document.getElementById('progress-text').innerText = `Pertanyaan ${currentIdx + 1}/${currentQuestions.length}`;
+            
+            const fill = ((currentIdx + 1) / currentQuestions.length) * 100;
+            document.getElementById('progress-fill').style.width = fill + '%';
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-xl border border-gray-200 hover:border-pink-400 hover:bg-pink-50 transition-all text-sm font-medium text-gray-700";
+                btn.innerText = opt.t;
+                btn.onclick = () => selectOption(opt.v);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectOption(val) {
+            scores[val]++;
+            currentIdx++;
+            showQuestion();
+        }
+
+        function showResult() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+
+            // Find highest score
+            const winner = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+            const data = careerData[winner];
+
+            document.getElementById('result-title').innerText = data.title;
+            document.getElementById('result-desc').innerText = data.desc;
+            document.getElementById('result-major').innerText = data.major;
+            document.getElementById('result-salary').innerText = data.salary;
+        }
+
+        // Export Functions
+        async function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const element = document.getElementById('capture-area');
+            const canvas = await html2canvas(element);
+            const imgData = canvas.toDataURL('image/png');
+            
+            const pdf = new jsPDF();
+            pdf.text("FuturePath Career Report", 10, 10);
+            pdf.addImage(imgData, 'PNG', 10, 20, 190, 0);
+            pdf.save("Hasil_Karir_FuturePath.pdf");
+        }
+
+        async function downloadImage() {
+            const element = document.getElementById('capture-area');
+            const canvas = await html2canvas(element);
+            const link = document.createElement('a');
+            link.download = 'FuturePath_Result.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function downloadExcel() {
+            const title = document.getElementById('result-title').innerText;
+            const major = document.getElementById('result-major').innerText;
+            const salary = document.getElementById('result-salary').innerText;
+            
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Kategori,Hasil\r\n";
+            csvContent += `Prediksi Karir,${title}\r\n`;
+            csvContent += `Rekomendasi Jurusan,${major}\r\n`;
+            csvContent += `Ekspektasi Gaji,${salary}\r\n`;
+            csvContent += `Mode Tes,${currentMode}\r\n`;
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "Laporan_Karir.csv");
+            document.body.appendChild(link);
+            link.click();
+        }
+    </script>
+</body>
+</html>
